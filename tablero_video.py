@@ -102,10 +102,13 @@ def preprocess_image(image):
     preprocessed_image = np.expand_dims(preprocessed_image, axis=0)
 
     return preprocessed_image
+def calcularJugada(arrayTablero):
+    print(arrayTablero)
+
 def main():
     # Capturar video desde la cámara (puedes cambiar el número 0 si tienes varias cámaras)
     cap = cv2.VideoCapture(0)
-
+    arrayJugada = []
     while True:
         # Leer un frame del video
         ret, frame = cap.read()
@@ -126,6 +129,8 @@ def main():
             filtered_small_squares = filter_small_squares(small_squares)
 
            # Para cada cuadrado pequeño, hacer una predicción y colocar la etiqueta
+
+        jugadaActual = []
         for idx, small_square in enumerate(filtered_small_squares):
             x_s, y_s, w_s, h_s = cv2.boundingRect(small_square)
             small_roi = roi[y_s:y_s + h_s, x_s:x_s + w_s]
@@ -135,10 +140,13 @@ def main():
 
             # Asignar etiqueta según la predicción
             if predicted_class == 1:
-                label = "Cruz"
+                label = "Equis"
+                jugadaActual.append(predicted_class)
             elif predicted_class == 0:
+                jugadaActual.append(predicted_class)
                 label = "Circulo"
             else:
+                jugadaActual.append(2)
                 label = "Vacio"
 
             # Ajustar la posición para centrar el texto
@@ -163,6 +171,15 @@ def main():
             draw_square(frame, largest_square)
 
             cv2.imshow("ROI", roi)
+            
+        if arrayJugada != jugadaActual and len(jugadaActual) == 9:
+            arrayJugada = jugadaActual
+            # Abrir el archivo en modo de escritura, creándolo si no existe
+            nombre_archivo = "registroJugadas.txt"
+            with open(nombre_archivo, 'a') as archivo:
+                archivo.write(str(jugadaActual) + '\n')
+
+# Llamada a la función para agregar texto al archivo
 
         # Mostrar la imagen original
         cv2.imshow("Original", frame)
