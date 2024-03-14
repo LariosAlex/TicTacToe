@@ -102,8 +102,12 @@ def preprocess_image(image):
     preprocessed_image = np.expand_dims(preprocessed_image, axis=0)
 
     return preprocessed_image
+
+#Funcion que obtiene la jugada
 def calcularJugada(arrayTablero):
-    print(arrayTablero)
+    archivo = "registroJugadas.txt"
+    with open(archivo, 'a') as archivo:
+        archivo.write(str(arrayTablero) + '\n')
 
 def main():
     # Capturar video desde la cámara (puedes cambiar el número 0 si tienes varias cámaras)
@@ -171,15 +175,11 @@ def main():
             draw_square(frame, largest_square)
 
             cv2.imshow("ROI", roi)
-            
+
+        #Comprobamos si el estado de las fichas de ha actualizado    
         if arrayJugada != jugadaActual and len(jugadaActual) == 9:
             arrayJugada = jugadaActual
-            # Abrir el archivo en modo de escritura, creándolo si no existe
-            nombre_archivo = "registroJugadas.txt"
-            with open(nombre_archivo, 'a') as archivo:
-                archivo.write(str(jugadaActual) + '\n')
-
-# Llamada a la función para agregar texto al archivo
+            calcularJugada(jugadaActual)
 
         # Mostrar la imagen original
         cv2.imshow("Original", frame)
