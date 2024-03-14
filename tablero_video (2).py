@@ -4,12 +4,8 @@ import tensorflow as tf
 import numpy as np
 from tensorflow.keras.preprocessing.image import img_to_array, load_img
 
-#Hay que cambiar el modelo entrenado con los numero correctoss!!!
 model = tf.keras.models.load_model('modelo_entrenado2.h5')
 
-last_player = 1
-
-jugador = 2
 
 def detect_squares(frame):
     # Convertir a escala de grises
@@ -106,164 +102,38 @@ def preprocess_image(image):
     preprocessed_image = np.expand_dims(preprocessed_image, axis=0)
 
     return preprocessed_image
-
 def calcularJugada(arrayTablero):
-    global last_player
 
-
-    if es_turno(arrayTablero, jugador):
-        mejor_jugada = minmax(arrayTablero, jugador)
-
-        arrayTablero[mejor_jugada] = 1 #Se debe corregir, para que 0 vacio, 1 circulo, 2 cruz, y que coincida con jugador
- 
-        print("Mejor jugada para el jugador", jugador, "es en la posición", mejor_jugada)
-        mostrar_tablero(arrayTablero)
-    else:
-        print("No es el turno del jugador", jugador)
-
-
-
-
-import math
-
-def es_turno(tablero, jugador):
-    global last_player  # Acceder a la variable global
-
-    count_circulo = tablero.count(0)
-    count_cruz = tablero.count(1)
-
-    if count_circulo > count_cruz:
-        return jugador == 1  # Es el turno del jugador 1 si hay más círculos
-    elif count_circulo < count_cruz:
-        return jugador == 0  # Es el turno del jugador 0 si hay más cruces
-    else:
-        return jugador != last_player   
-
-
-def obtener_ganador(tablero):
-    """
-    Verifica si hay un ganador en el tablero.
-    Retorna 0 si gana el círculo, 1 si gana la cruz, o None si hay empate o el juego no ha terminado.
-    """
-    for i in range(3):
-        # Filas
-        if tablero[i*3] == tablero[i*3 + 1] == tablero[i*3 + 2] and tablero[i*3] != 2:
-            return tablero[i*3]
-        # Columnas
-        if tablero[i] == tablero[i + 3] == tablero[i + 6] and tablero[i] != 2:
-            return tablero[i]
     
-    # Diagonales
-    if tablero[0] == tablero[4] == tablero[8] and tablero[0] != 2:
-        return tablero[0]
-    if tablero[2] == tablero[4] == tablero[6] and tablero[2] != 2:
-        return tablero[2]
-    
-    # Si no hay ganador pero el tablero está lleno, hay empate
-    if 2 not in tablero:
-        return None
-    
-    # Si no hay ganador ni empate, el juego no ha terminado
-    return None
-
-def minmax(tablero, jugador):
-    """
-    Algoritmo Minimax para encontrar la mejor jugada posible.
-    """
-    def maximizar(tablero, jugador):
-        ganador = obtener_ganador(tablero)
-        if ganador is not None:
-            if ganador == jugador:
-                return 1
-            elif ganador is None:
-                return 0
-            else:
-                return -1
-
-        mejor_valor = -math.inf
-        for i in range(9):
-            if tablero[i] == 2:
-                tablero[i] = jugador
-                valor = minimizar(tablero, jugador)
-                tablero[i] = 2
-                mejor_valor = max(mejor_valor, valor)
-        return mejor_valor
-
-    def minimizar(tablero, jugador):
-        otro_jugador = 1 if jugador == 0 else 0
-        ganador = obtener_ganador(tablero)
-        if ganador is not None:
-            if ganador == jugador:
-                return 1
-            elif ganador is None:
-                return 0
-            else:
-                return -1
-
-        mejor_valor = math.inf
-        for i in range(9):
-            if tablero[i] == 2:
-                tablero[i] = otro_jugador
-                valor = maximizar(tablero, jugador)
-                tablero[i] = 2
-                mejor_valor = min(mejor_valor, valor)
-        return mejor_valor
-
-    mejor_movimiento = -1
-    mejor_valor = -math.inf
-    for i in range(9):
-        if tablero[i] == 2:
-            tablero[i] = jugador
-            valor = minimizar(tablero, jugador)
-            tablero[i] = 2
-            if valor > mejor_valor:
-                mejor_valor = valor
-                mejor_movimiento = i
-    return mejor_movimiento
-
-def mostrar_tablero(tablero):
-    """
-    Muestra el tablero con las representaciones de los jugadores.
-    """
-    for i in range(3):
-        row = []
-        for j in range(3):
-            if tablero[i * 3 + j] == 2:
-                row.append(" ")
-            elif tablero[i * 3 + j] == 0:
-                row.append("O")
-            elif tablero[i * 3 + j] == 1:
-                row.append("X")
-        print("|".join(row))
-
-
+    print(arrayTablero)
 
 def main():
-    frame = cv2.imread('prueba2.png')
+    # Capturar video desde la cámara (puedes cambiar el número 0 si tienes varias cámaras)
+    cap = cv2.VideoCapture(0)
 
-    # Procesar la imagen
-    squares = detect_squares(frame)
-    largest_square = filter_largest_square(squares)
+    while True:
+        # Leer un frame del video
+        ret, frame = cap.read()
 
-    if largest_square is not None:
-        x, y, w, h = cv2.boundingRect(largest_square)
-        roi = frame[y:y + h, x:x + w]
+        # Inicializar filtered_small_squares incluso si largest_square es None
+        filtered_small_squares = []
 
-        # Detectar cuadrados pequeños dentro del ROI
-        small_squares = detect_small_squares(roi)
-        filtered_small_squares = filter_small_squares(small_squares)
-        tolerancia_y = 10
+        # Procesar la imagen
+        squares = detect_squares(frame)
+        largest_square = filter_largest_square(squares)
 
-        # Ordenar los cuadrados priorizando la coordenada x, pero considerando la diferencia en y
-        filtered_small_squares_ordenado = sorted(filtered_small_squares, key=lambda square: (cv2.boundingRect(square)[1] // tolerancia_y, cv2.boundingRect(square)[0]))
-        for square in filtered_small_squares_ordenado:
-            x, y, w, h = cv2.boundingRect(square)
-            print("Coordenadas: x =", x, ", y =", y)
+        if largest_square is not None:
+            x, y, w, h = cv2.boundingRect(largest_square)
+            roi = frame[y:y + h, x:x + w]
 
+            # Detectar cuadrados pequeños dentro del ROI
+            small_squares = detect_small_squares(roi)
+            filtered_small_squares = filter_small_squares(small_squares)
+
+           # Para cada cuadrado pequeño, hacer una predicción y colocar la etiqueta
         arrayJugada = []
-        jugadaActual = []
-        for idx, small_square in enumerate(filtered_small_squares_ordenado):
-            print(jugadaActual)
+        for idx, small_square in enumerate(filtered_small_squares):
+            jugadaActual = []
             x_s, y_s, w_s, h_s = cv2.boundingRect(small_square)
             small_roi = roi[y_s:y_s + h_s, x_s:x_s + w_s]
 
@@ -285,7 +155,7 @@ def main():
             text_x = x_s + w_s // 2 - 30
             text_y = y_s + h_s // 2
 
-            # Obtener las dimensiones del texto
+           # Obtener las dimensiones del texto
             (label_width, label_height), baseline = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
 
             # Crear un fondo blanco debajo del texto
@@ -293,6 +163,8 @@ def main():
 
             # Dibujar etiqueta sobre el cuadrado pequeño
             cv2.putText(roi, label, (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+
+
 
             # Dibujar cuadrados pequeños en rojo
             draw_squares(roi, filtered_small_squares, (0, 0, 255))
@@ -305,13 +177,16 @@ def main():
         if arrayJugada != jugadaActual:
             arrayJugada = jugadaActual
             calcularJugada(arrayJugada)
+            
+        # Mostrar la imagen original
+        cv2.imshow("Original", frame)
 
+        # Salir del bucle si se presiona la tecla 'q'
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
-    # Mostrar la imagen original
-    cv2.imshow("Original", frame)
-
-    # Esperar hasta que se presione una tecla y luego cerrar las ventanas
-    cv2.waitKey(0)
+    # Liberar la captura de video y cerrar las ventanas
+    cap.release()
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
